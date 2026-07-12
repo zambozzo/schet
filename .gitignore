@@ -39,3 +39,11 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local toolchains / secrets
+.tools/
+google-services.json
+server/data/*.json
+!server/data/.gitkeep
+release/
+*.apk

@@ -224,7 +224,7 @@ function AppContent() {
                   },
                 ]}
               >
-                <Text style={[styles.hintMark, { fontSize: ms(14) }]}>?</Text>
+                <Text style={[styles.hintMark, { fontSize: ms(15) }]}>⚙</Text>
               </Pressable>
             ) : null}
           </View>

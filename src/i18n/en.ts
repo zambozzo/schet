@@ -43,7 +43,7 @@ export const en: Record<TranslationKey, string> = {
   'auth.google': 'Sign in with Google',
   'auth.googleError': 'Google sign-in failed',
   'update.title': 'Version {version} is available',
-  'update.text': 'You can update the app from GitHub',
+  'update.text': 'A new app update is available',
   'update.action': 'Update',
   'update.later': 'Later',
   'update.errorTitle': 'Update',

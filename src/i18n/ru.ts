@@ -43,7 +43,7 @@ export const ru: Record<TranslationKey, string> = {
   'auth.google': 'Войти через Google',
   'auth.googleError': 'Не удалось войти через Google',
   'update.title': 'Доступна версия {version}',
-  'update.text': 'Можно обновить приложение с GitHub',
+  'update.text': 'Доступно обновление приложения',
   'update.action': 'Обновить',
   'update.later': 'Позже',
   'update.errorTitle': 'Обновление',

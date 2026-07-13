@@ -2,7 +2,7 @@
   "expo": {
     "name": "Счёт",
     "slug": "schet",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "schet",
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.mathquiz.schet",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#0F2B3A",
         "foregroundImage": "./assets/android-icon-foreground.png",

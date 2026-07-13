@@ -2,12 +2,15 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { isFirebaseConfigured } from '../config';
 import { signInWithGoogle } from '../auth';
+import { useT } from '../i18n';
+import { useLayout } from '../layout';
 import type { UserStats } from '../types';
 import { colors } from '../theme';
 
@@ -16,6 +19,8 @@ type Props = {
 };
 
 export function RegisterScreen({ onRegistered }: Props) {
+  const { ms, vs, padH, contentMaxWidth, isCompact } = useLayout();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,67 +31,92 @@ export function RegisterScreen({ onRegistered }: Props) {
       const user = await signInWithGoogle();
       onRegistered(user);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось войти через Google');
+      setError(e instanceof Error ? e.message : t('auth.googleError'));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.hero}>
-        <Text style={styles.brand}>Счёт</Text>
-        <Text style={styles.subtitle}>
-          Примеры на сложение и вычитание. Цифры до 100.
-          Статистика всех игроков в облаке — компьютер не нужен.
-        </Text>
-      </View>
-
-      <View style={styles.form}>
-        {!isFirebaseConfigured() ? (
-          <Text style={styles.warn}>
-            Сначала настройте Firebase (файл FIREBASE_SETUP.md) и пересоберите APK.
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[
+        styles.root,
+        {
+          paddingHorizontal: padH,
+          paddingVertical: vs(isCompact ? 16 : 24),
+        },
+      ]}
+      keyboardShouldPersistTaps="handled"
+      bounces={false}
+    >
+      <View style={[styles.inner, { maxWidth: contentMaxWidth, width: '100%' }]}>
+        <View style={[styles.hero, { marginBottom: vs(isCompact ? 24 : 36) }]}>
+          <Text style={[styles.brand, { fontSize: ms(56) }]}>{t('app.brand')}</Text>
+          <Text
+            style={[
+              styles.subtitle,
+              { fontSize: ms(17), lineHeight: ms(24), marginTop: vs(10) },
+            ]}
+          >
+            {t('auth.subtitle')}
           </Text>
-        ) : null}
+        </View>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <View style={styles.form}>
+          {!isFirebaseConfigured() ? (
+            <Text style={[styles.warn, { fontSize: ms(14), lineHeight: ms(20) }]}>
+              {t('auth.firebaseWarn')}
+            </Text>
+          ) : null}
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleGoogle}
-          disabled={loading || !isFirebaseConfigured()}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.bg} />
-          ) : (
-            <Text style={styles.buttonText}>Войти через Google</Text>
-          )}
-        </Pressable>
+          {error ? (
+            <Text style={[styles.error, { fontSize: ms(14) }]}>{error}</Text>
+          ) : null}
+
+          <Pressable
+            style={[
+              styles.button,
+              { paddingVertical: vs(16), borderRadius: ms(14) },
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={handleGoogle}
+            disabled={loading || !isFirebaseConfigured()}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.bg} />
+            ) : (
+              <Text style={[styles.buttonText, { fontSize: ms(18) }]}>
+                {t('auth.google')}
+              </Text>
+            )}
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  scroll: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  root: {
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
   },
-  hero: {
-    marginBottom: 36,
+  inner: {
+    alignSelf: 'center',
   },
+  hero: {},
   brand: {
-    fontSize: 56,
     fontWeight: '800',
     color: colors.accent,
     letterSpacing: -1,
   },
   subtitle: {
-    marginTop: 10,
-    fontSize: 17,
-    lineHeight: 24,
     color: colors.muted,
   },
   form: {
@@ -94,18 +124,13 @@ const styles = StyleSheet.create({
   },
   warn: {
     color: '#FBBF24',
-    fontSize: 14,
-    lineHeight: 20,
   },
   error: {
     color: colors.warn,
-    fontSize: 14,
   },
   button: {
     marginTop: 8,
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
     alignItems: 'center',
   },
   buttonDisabled: {
@@ -113,7 +138,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.bg,
-    fontSize: 18,
     fontWeight: '700',
   },
 });

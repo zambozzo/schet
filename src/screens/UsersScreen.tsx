@@ -9,6 +9,9 @@ import {
   View,
 } from 'react-native';
 import { fetchUsers } from '../cloud';
+import { getDisplayName } from '../displayName';
+import { useT } from '../i18n';
+import { useLayout } from '../layout';
 import type { UserStats } from '../types';
 import { colors } from '../theme';
 
@@ -17,6 +20,8 @@ type Props = {
 };
 
 export function UsersScreen({ currentUserId }: Props) {
+  const { ms, vs, s, padH, contentMaxWidth } = useLayout();
+  const t = useT();
   const [users, setUsers] = useState<UserStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +32,11 @@ export function UsersScreen({ currentUserId }: Props) {
       const data = await fetchUsers();
       setUsers(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось загрузить список');
+      setError(e instanceof Error ? e.message : t('users.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -48,65 +53,82 @@ export function UsersScreen({ currentUserId }: Props) {
   }
 
   return (
-    <View style={styles.root}>
-      <Text style={styles.title}>Игроки</Text>
-      <Text style={styles.hint}>Онлайн и статистика ответов (облако)</Text>
+    <View style={[styles.root, { paddingHorizontal: padH, paddingTop: vs(8) }]}>
+      <View style={{ width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center', flex: 1 }}>
+        <Text style={[styles.title, { fontSize: ms(28) }]}>{t('users.title')}</Text>
+        <Text style={[styles.hint, { fontSize: ms(14), marginBottom: vs(14) }]}>
+          {t('users.hint')}
+        </Text>
 
-      {error ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable onPress={load}>
-            <Text style={styles.retry}>Повторить</Text>
-          </Pressable>
-        </View>
-      ) : null}
+        {error ? (
+          <View style={[styles.errorBox, { borderRadius: ms(12), padding: s(12) }]}>
+            <Text style={[styles.errorText, { fontSize: ms(14) }]}>{error}</Text>
+            <Pressable onPress={load}>
+              <Text style={[styles.retry, { fontSize: ms(14) }]}>{t('users.retry')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-      <FlatList
-        data={users}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={load}
-            tintColor={colors.accent}
-          />
-        }
-        ListEmptyComponent={
-          <Text style={styles.empty}>Пока никого нет</Text>
-        }
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.row,
-              item.id === currentUserId && styles.rowMe,
-            ]}
-          >
-            <View style={styles.rowTop}>
-              <View style={styles.nameBlock}>
-                <View
-                  style={[
-                    styles.dot,
-                    { backgroundColor: item.online ? colors.ok : colors.muted },
-                  ]}
-                />
-                <Text style={styles.name}>
-                  {item.name}
-                  {item.id === currentUserId ? ' (вы)' : ''}
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.list, { gap: vs(10), paddingBottom: vs(24) }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={load}
+              tintColor={colors.accent}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={[styles.empty, { fontSize: ms(15), marginTop: vs(40) }]}>
+              {t('users.empty')}
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.row,
+                { borderRadius: ms(16), padding: s(14) },
+                item.id === currentUserId && styles.rowMe,
+              ]}
+            >
+              <View style={[styles.rowTop, { marginBottom: vs(12) }]}>
+                <View style={styles.nameBlock}>
+                  <View
+                    style={[
+                      styles.dot,
+                      {
+                        width: s(10),
+                        height: s(10),
+                        borderRadius: s(5),
+                        backgroundColor: item.online ? colors.ok : colors.muted,
+                      },
+                    ]}
+                  />
+                  <Text style={[styles.name, { fontSize: ms(17) }]} numberOfLines={1}>
+                    {getDisplayName(item)}
+                    {item.id === currentUserId ? ` ${t('users.you')}` : ''}
+                  </Text>
+                </View>
+                <Text style={[styles.online, { fontSize: ms(12) }]}>
+                  {item.online ? t('users.online') : t('users.offline')}
                 </Text>
               </View>
-              <Text style={styles.online}>
-                {item.online ? 'онлайн' : 'офлайн'}
-              </Text>
+              <View style={styles.metrics}>
+                <Metric label={t('users.examples')} value={item.total} ms={ms} />
+                <Metric label={t('users.correct')} value={item.correct} color={colors.ok} ms={ms} />
+                <Metric
+                  label={t('users.incorrect')}
+                  value={item.incorrect}
+                  color={colors.warn}
+                  ms={ms}
+                />
+              </View>
             </View>
-            <View style={styles.metrics}>
-              <Metric label="Примеров" value={item.total} />
-              <Metric label="Верно" value={item.correct} color={colors.ok} />
-              <Metric label="Неверно" value={item.incorrect} color={colors.warn} />
-            </View>
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
     </View>
   );
 }
@@ -115,15 +137,19 @@ function Metric({
   label,
   value,
   color,
+  ms,
 }: {
   label: string;
   value: number;
   color?: string;
+  ms: (n: number) => number;
 }) {
   return (
     <View style={styles.metric}>
-      <Text style={[styles.metricValue, color ? { color } : null]}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={[styles.metricValue, { fontSize: ms(18) }, color ? { color } : null]}>
+        {value}
+      </Text>
+      <Text style={[styles.metricLabel, { fontSize: ms(12) }]}>{label}</Text>
     </View>
   );
 }
@@ -132,8 +158,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingHorizontal: 20,
-    paddingTop: 8,
   },
   center: {
     flex: 1,
@@ -143,27 +167,19 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 28,
     fontWeight: '800',
   },
   hint: {
     color: colors.muted,
     marginTop: 4,
-    marginBottom: 14,
   },
-  list: {
-    paddingBottom: 24,
-    gap: 10,
-  },
+  list: {},
   empty: {
     color: colors.muted,
     textAlign: 'center',
-    marginTop: 40,
   },
   row: {
     backgroundColor: colors.panel,
-    borderRadius: 16,
-    padding: 14,
   },
   rowMe: {
     borderWidth: 1,
@@ -173,7 +189,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
   nameBlock: {
     flexDirection: 'row',
@@ -182,20 +197,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 8,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
+  dot: {},
   name: {
     color: colors.text,
-    fontSize: 17,
     fontWeight: '700',
     flexShrink: 1,
   },
   online: {
     color: colors.muted,
-    fontSize: 12,
   },
   metrics: {
     flexDirection: 'row',
@@ -205,18 +214,14 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     color: colors.text,
-    fontSize: 18,
     fontWeight: '800',
   },
   metricLabel: {
     color: colors.muted,
-    fontSize: 12,
     marginTop: 2,
   },
   errorBox: {
     backgroundColor: colors.bgSoft,
-    borderRadius: 12,
-    padding: 12,
     marginBottom: 10,
     gap: 6,
   },

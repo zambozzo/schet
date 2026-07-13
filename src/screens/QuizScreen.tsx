@@ -3,12 +3,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { reportAnswer } from '../cloud';
+import { useT } from '../i18n';
+import { useLayout } from '../layout';
 import type { MathProblem, UserStats } from '../types';
 import { generateProblem } from '../utils/math';
 import { colors } from '../theme';
@@ -19,6 +22,8 @@ type Props = {
 };
 
 export function QuizScreen({ user, onStatsUpdated }: Props) {
+  const { ms, vs, s, padH, contentMaxWidth, isCompact } = useLayout();
+  const t = useT();
   const [problem, setProblem] = useState<MathProblem>(() => generateProblem());
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<'ok' | 'bad' | null>(null);
@@ -63,46 +68,102 @@ export function QuizScreen({ user, onStatsUpdated }: Props) {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.statsRow}>
-        <Stat label="Всего" value={user.total} />
-        <Stat label="Верно" value={user.correct} tone="ok" />
-        <Stat label="Ошибки" value={user.incorrect} tone="bad" />
-      </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: padH,
+            paddingTop: vs(8),
+            paddingBottom: vs(16),
+            alignItems: 'center',
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        <View style={{ width: '100%', maxWidth: contentMaxWidth }}>
+          <View style={[styles.statsRow, { gap: s(10), marginBottom: vs(16) }]}>
+            <Stat label={t('quiz.total')} value={user.total} ms={ms} vs={vs} />
+            <Stat label={t('quiz.correct')} value={user.correct} tone="ok" ms={ms} vs={vs} />
+            <Stat label={t('quiz.errors')} value={user.incorrect} tone="bad" ms={ms} vs={vs} />
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.caption}>Решите пример</Text>
-        <Text style={styles.problem}>{problem.display}</Text>
+          <View
+            style={[
+              styles.card,
+              {
+                borderRadius: ms(22),
+                padding: vs(isCompact ? 16 : 22),
+                gap: vs(12),
+              },
+            ]}
+          >
+            <Text style={[styles.caption, { fontSize: ms(15) }]}>
+              {t('quiz.solve')}
+            </Text>
+            <Text
+              style={[
+                styles.problem,
+                { fontSize: ms(isCompact ? 34 : 42) },
+              ]}
+              adjustsFontSizeToFit
+              numberOfLines={1}
+              minimumFontScale={0.6}
+            >
+              {problem.display}
+            </Text>
 
-        <TextInput
-          style={styles.input}
-          value={answer}
-          onChangeText={setAnswer}
-          keyboardType="number-pad"
-          placeholder="Ответ"
-          placeholderTextColor={colors.muted}
-          editable={!busy}
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={submit}
-        />
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderRadius: ms(14),
+                  paddingHorizontal: s(16),
+                  paddingVertical: vs(14),
+                  fontSize: ms(28),
+                },
+              ]}
+              value={answer}
+              onChangeText={setAnswer}
+              keyboardType="number-pad"
+              placeholder={t('quiz.answer')}
+              placeholderTextColor={colors.muted}
+              editable={!busy}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={submit}
+            />
 
-        <Pressable
-          style={[styles.button, busy && styles.buttonDisabled]}
-          onPress={submit}
-          disabled={busy}
-        >
-          <Text style={styles.buttonText}>Проверить</Text>
-        </Pressable>
+            <Pressable
+              style={[
+                styles.button,
+                {
+                  borderRadius: ms(14),
+                  paddingVertical: vs(16),
+                },
+                busy && styles.buttonDisabled,
+              ]}
+              onPress={submit}
+              disabled={busy}
+            >
+              <Text style={[styles.buttonText, { fontSize: ms(18) }]}>
+                {t('quiz.check')}
+              </Text>
+            </Pressable>
 
-        {feedback === 'ok' ? (
-          <Text style={[styles.feedback, { color: colors.ok }]}>Верно!</Text>
-        ) : null}
-        {feedback === 'bad' ? (
-          <Text style={[styles.feedback, { color: colors.warn }]}>
-            Неверно. Ответ: {problem.answer}
-          </Text>
-        ) : null}
-      </View>
+            {feedback === 'ok' ? (
+              <Text style={[styles.feedback, { color: colors.ok, fontSize: ms(16) }]}>
+                {t('quiz.ok')}
+              </Text>
+            ) : null}
+            {feedback === 'bad' ? (
+              <Text style={[styles.feedback, { color: colors.warn, fontSize: ms(16) }]}>
+                {t('quiz.bad', { answer: problem.answer })}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -111,17 +172,21 @@ function Stat({
   label,
   value,
   tone,
+  ms,
+  vs,
 }: {
   label: string;
   value: number;
   tone?: 'ok' | 'bad';
+  ms: (n: number) => number;
+  vs: (n: number) => number;
 }) {
   const color =
     tone === 'ok' ? colors.ok : tone === 'bad' ? colors.warn : colors.text;
   return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.stat, { borderRadius: ms(14), paddingVertical: vs(12) }]}>
+      <Text style={[styles.statValue, { color, fontSize: ms(22) }]}>{value}</Text>
+      <Text style={[styles.statLabel, { fontSize: ms(12) }]}>{label}</Text>
     </View>
   );
 }
@@ -130,43 +195,33 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingHorizontal: 20,
-    paddingTop: 12,
+  },
+  content: {
+    flexGrow: 1,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
   },
   stat: {
     flex: 1,
     backgroundColor: colors.bgSoft,
-    borderRadius: 14,
-    paddingVertical: 12,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 22,
     fontWeight: '800',
   },
   statLabel: {
     marginTop: 2,
     color: colors.muted,
-    fontSize: 12,
   },
   card: {
     backgroundColor: colors.panel,
-    borderRadius: 22,
-    padding: 22,
-    gap: 14,
   },
   caption: {
     color: colors.muted,
-    fontSize: 15,
   },
   problem: {
     color: colors.text,
-    fontSize: 42,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -174,18 +229,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 28,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
   },
   button: {
     backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
     alignItems: 'center',
   },
   buttonDisabled: {
@@ -193,12 +242,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: colors.bg,
-    fontSize: 18,
     fontWeight: '700',
   },
   feedback: {
     textAlign: 'center',
-    fontSize: 16,
     fontWeight: '600',
   },
 });

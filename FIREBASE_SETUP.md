@@ -38,19 +38,26 @@ keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androi
 ## 5. Firestore
 
 1. **Firestore Database** → Create database → production mode  
-2. Rules (для старта, потом ужесточите):
+2. Вкладка **Rules** → полностью замените текст на:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
+      // все вошедшие видят статистику
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // писать можно только свой документ
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId;
+      allow delete: if false;
     }
   }
 }
 ```
+
+3. Обязательно нажмите **Publish** (Опубликовать).  
+   Если Rules не опубликовать, будет ошибка «Нет доступа к Firestore».
 
 Чтобы все видели статистику всех игроков, правило `allow read` для авторизованных — ок.  
 Писать можно только свой документ (`uid == userId`).

@@ -1,6 +1,7 @@
 export type UserStats = {
   id: string;
   name: string;
+  nickname?: string | null;
   email?: string | null;
   photoURL?: string | null;
   total: number;
@@ -26,3 +27,5 @@ export type UpdateInfo = {
   downloadUrl: string;
   notes: string;
 };
+
+export type AppLanguage = 'ru' | 'en';
